@@ -16,6 +16,17 @@ jobs:
       - name: تحميل المستودع
         uses: actions/checkout@v4
         
+      - name: تحرير مساحة القرص
+        run: |
+          echo "المساحة قبل التنظيف:"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          echo "المساحة بعد التنظيف:"
+          df -h
+        
       - name: إعداد Python
         uses: actions/setup-python@v5
         with:
@@ -30,6 +41,7 @@ jobs:
           sudo apt-get install -y libharfbuzz-dev libfribidi-dev libicu-dev
           sudo apt-get install -y libfreetype6-dev libboost-all-dev libssl-dev
           sudo apt-get install -y libpulse-dev libasound2-dev
+          sudo apt-get clean
           
       - name: تثبيت Autobuild
         run: |
@@ -71,10 +83,14 @@ jobs:
             fi
           fi
           
-      - name: التهيئة والبناء معاً
+      - name: التهيئة والبناء
         run: |
           cd firestorm
+          echo "المساحة قبل البناء:"
+          df -h
           autobuild build -A 64 -c ReleaseFS_open
+          echo "المساحة بعد البناء:"
+          df -h
           
       - name: رفع البرنامج الجاهز
         uses: actions/upload-artifact@v4
