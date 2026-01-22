@@ -1,38 +1,48 @@
-name: بناء Sela Viewer
+- name: استنساخ Firestorm
+  run: |
+    git clone https://github.com/.../firestorm.git firestorm  # ← ننشئ المجلد أولاً!
+    
+- name: بناء Sela Viewer
+  run: |
+    cd firestorm
+    ./autobuild build -c ReleaseOS  # ← نستخدم autobuild الموجود في firestorm
+```
 
-on:
-  push:
-    branches: [main, master]
-  workflow_dispatch:
+---
 
-jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+## 📝 خطوات التصحيح:
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
+### 1. افتح ملف build.yml
+- Code → .github → workflows → build.yml
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+### 2. اضغط Edit (القلم ✏️)
 
-      - name: Install Dependencies and Arabic Support
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++ libfribidi-dev libharfbuzz-dev libgl1-mesa-dev libglu1-mesa-dev
+### 3. احذف **كل شيء** (Ctrl+A ثم Delete)
 
-      - name: Install Autobuild
-        run: |
-          python3 -m pip install autobuild
+### 4. الصق الكود الجديد أعلاه (كله!)
 
-      - name: Run Build
-        run: |
-          if [ -d "firestorm" ]; then
-            cd firestorm
-          fi
-          # استخدام المنصة linux64 المتوافقة مع أنظمة أوبونتو
-          autobuild build -p linux64
+### 5. احفظ
+- رسالة: "إصلاح مشكلة البناء"
+- اضغط "Commit changes"
+
+---
+
+## 🚀 بعد الحفظ:
+
+### شغّل البناء من جديد:
+1. Actions → بناء Sela Viewer
+2. Run workflow
+3. اضغط الزر الأخضر
+
+---
+
+## ⏰ هذه المرة يجب أن ينجح!
+
+البناء سيمر بهذه المراحل:
+```
+✓ تحميل المستودع (10 ثانية)
+✓ تثبيت المتطلبات (5-10 دقائق)
+✓ استنساخ Firestorm (5-10 دقائق)
+✓ نسخ ملفات العربية (1 دقيقة)
+⏰ البناء (60-120 دقيقة) ← هنا سيأخذ وقت طويل
+✓ رفع النتيجة (2-5 دقائق)
