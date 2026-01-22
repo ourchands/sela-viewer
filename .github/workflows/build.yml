@@ -2,7 +2,9 @@ name: بناء Sela Viewer
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -11,61 +13,67 @@ jobs:
     timeout-minutes: 180
     
     steps:
-    - name: تحميل المستودع
-      uses: actions/checkout@v4
-      
-    - name: تثبيت المتطلبات الأساسية
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake git python3 python3-pip wget curl
+      - name: تحميل المستودع
+        uses: actions/checkout@v4
         
-    - name: تثبيت مكتبات التطوير
-      run: |
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libx11-dev libxinerama-dev libxrandr-dev libxi-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libasound2-dev libpulse-dev libssl-dev libboost-all-dev zlib1g-dev
-        
-    - name: تثبيت مكتبات دعم اللغة العربية
-      run: |
-        sudo apt-get install -y libharfbuzz-dev libfribidi-dev libicu-dev
-        
-    - name: استنساخ Firestorm Viewer
-      run: |
-        git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
-        cd firestorm
-        echo "تم استنساخ Firestorm بنجاح"
-        
-    - name: نسخ ملفات دعم اللغة العربية
-      run: |
-        mkdir -p firestorm/indra/llui
-        cp llarabicsupport.h firestorm/indra/llui/ 2>/dev/null || echo "تحذير llarabicsupport.h"
-        cp llarabicsupport.cpp firestorm/indra/llui/ 2>/dev/null || echo "تحذير llarabicsupport.cpp"
-        mkdir -p firestorm/indra/cmake
-        cp Arabic.cmake firestorm/indra/cmake/ 2>/dev/null || echo "تحذير Arabic.cmake"
-        
-    - name: تحميل الخط العربي
-      run: |
-        mkdir -p firestorm/indra/newview/skins/default/fonts
-        wget -q -O firestorm/indra/newview/skins/default/fonts/NotoSansArabic-Regular.ttf "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf"
-        
-    - name: تعديل ملفات البناء
-      run: |
-        cd firestorm
-        if [ -f "indra/llui/CMakeLists.txt" ]; then
-          if ! grep -q "include(Arabic)" indra/llui/CMakeLists.txt; then
-            sed -i '1i include(Arabic)' indra/llui/CMakeLists.txt
+      - name: تثبيت المتطلبات الأساسية
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git python3 python3-pip wget curl
+          
+      - name: تثبيت مكتبات التطوير
+        run: |
+          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libx11-dev libxinerama-dev libxrandr-dev libxi-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libasound2-dev libpulse-dev libssl-dev libboost-all-dev zlib1g-dev
+          
+      - name: تثبيت مكتبات دعم اللغة العربية
+        run: |
+          sudo apt-get install -y libharfbuzz-dev libfribidi-dev libicu-dev
+          
+      - name: استنساخ Firestorm Viewer
+        run: |
+          git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
+          cd firestorm
+          echo "تم استنساخ Firestorm بنجاح"
+          
+      - name: نسخ ملفات دعم اللغة العربية
+        run: |
+          mkdir -p firestorm/indra/llui
+          cp llarabicsupport.h firestorm/indra/llui/ 2>/dev/null || echo "تحذير llarabicsupport.h"
+          cp llarabicsupport.cpp firestorm/indra/llui/ 2>/dev/null || echo "تحذير llarabicsupport.cpp"
+          mkdir -p firestorm/indra/cmake
+          cp Arabic.cmake firestorm/indra/cmake/ 2>/dev/null || echo "تحذير Arabic.cmake"
+          
+      - name: تحميل الخط العربي
+        run: |
+          mkdir -p firestorm/indra/newview/skins/default/fonts
+          wget -q -O firestorm/indra/newview/skins/default/fonts/NotoSansArabic-Regular.ttf "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf"
+          
+      - name: تعديل ملفات البناء
+        run: |
+          cd firestorm
+          if [ -f "indra/llui/CMakeLists.txt" ]; then
+            if ! grep -q "include(Arabic)" indra/llui/CMakeLists.txt; then
+              sed -i '1i include(Arabic)' indra/llui/CMakeLists.txt
+            fi
+            if ! grep -q "llarabicsupport.cpp" indra/llui/CMakeLists.txt; then
+              sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
+            fi
           fi
-          if ! grep -q "llarabicsupport.cpp" indra/llui/CMakeLists.txt; then
-            sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
-          fi
-        fi
-        
-    - name: تهيئة البناء
-      run: |
-        cd firestorm
-        ./autobuild configure -c ReleaseOS -DSTANDALONE:BOOL=ON
-        
-    - name: بناء Sela Viewer
-      run: |
-        cd firestorm
-        ./autobuild build -c ReleaseOS -- -j2
-        
-    - name: رفع البرنامج ال
+          
+      - name: تهيئة البناء
+        run: |
+          cd firestorm
+          ./autobuild configure -c ReleaseOS -DSTANDALONE:BOOL=ON
+          
+      - name: بناء Sela Viewer
+        run: |
+          cd firestorm
+          ./autobuild build -c ReleaseOS -- -j2
+          
+      - name: رفع البرنامج الجاهز
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Sela-Viewer-Linux-x64
+          path: firestorm/build-linux-x86_64/newview/packaged/
+          retention-days: 30
