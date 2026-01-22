@@ -2,67 +2,23 @@
 # Arabic.cmake - Configuration for Arabic text support libraries
 # Part of Sela Viewer project
 
-include(Prebuilt)
+include(FindPkgConfig)
 
 set(ARABIC_FIND_REQUIRED ON)
 
-# Try to find system libraries first (for Linux)
-if (STANDALONE)
-    include(FindPkgConfig)
-    
-    # Find HarfBuzz
-    pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
-    if (NOT HARFBUZZ_FOUND)
-        message(FATAL_ERROR "HarfBuzz not found. Please install libharfbuzz-dev")
-    endif()
-    
-    # Find FriBidi
-    pkg_check_modules(FRIBIDI REQUIRED fribidi)
-    if (NOT FRIBIDI_FOUND)
-        message(FATAL_ERROR "FriBidi not found. Please install libfribidi-dev")
-    endif()
-    
-    message(STATUS "Using system HarfBuzz: ${HARFBUZZ_LIBRARIES}")
-    message(STATUS "Using system FriBidi: ${FRIBIDI_LIBRARIES}")
-    
-else (STANDALONE)
-    # Use prebuilt binaries
-    use_prebuilt_binary(harfbuzz)
-    use_prebuilt_binary(fribidi)
-    
-    # Set include directories
-    set(HARFBUZZ_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include/harfbuzz)
-    set(FRIBIDI_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include/fribidi)
-    
-    # Set library names based on platform
-    if (LINUX)
-        set(HARFBUZZ_LIBRARIES harfbuzz)
-        set(FRIBIDI_LIBRARIES fribidi)
-        set(HARFBUZZ_LIBRARY_DIRS ${LIBS_PREBUILT_DIR}/lib/release)
-        set(FRIBIDI_LIBRARY_DIRS ${LIBS_PREBUILT_DIR}/lib/release)
-    elseif (DARWIN)
-        set(HARFBUZZ_LIBRARIES harfbuzz)
-        set(FRIBIDI_LIBRARIES fribidi)
-        set(HARFBUZZ_LIBRARY_DIRS ${LIBS_PREBUILT_DIR}/lib/release)
-        set(FRIBIDI_LIBRARY_DIRS ${LIBS_PREBUILT_DIR}/lib/release)
-    elseif (WINDOWS)
-        set(HARFBUZZ_LIBRARIES 
-            optimized harfbuzz
-            debug harfbuzz_d)
-        set(FRIBIDI_LIBRARIES 
-            optimized fribidi
-            debug fribidi_d)
-        set(HARFBUZZ_LIBRARY_DIRS 
-            ${LIBS_PREBUILT_DIR}/lib/release
-            ${LIBS_PREBUILT_DIR}/lib/debug)
-        set(FRIBIDI_LIBRARY_DIRS 
-            ${LIBS_PREBUILT_DIR}/lib/release
-            ${LIBS_PREBUILT_DIR}/lib/debug)
-    endif ()
-    
-    message(STATUS "Using prebuilt HarfBuzz from: ${HARFBUZZ_INCLUDE_DIRS}")
-    message(STATUS "Using prebuilt FriBidi from: ${FRIBIDI_INCLUDE_DIRS}")
-endif (STANDALONE)
+# Find system libraries (HarfBuzz and FriBidi)
+pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
+if (NOT HARFBUZZ_FOUND)
+    message(FATAL_ERROR "HarfBuzz not found. Please install libharfbuzz-dev")
+endif()
+
+pkg_check_modules(FRIBIDI REQUIRED fribidi)
+if (NOT FRIBIDI_FOUND)
+    message(FATAL_ERROR "FriBidi not found. Please install libfribidi-dev")
+endif()
+
+message(STATUS "Using system HarfBuzz: ${HARFBUZZ_LIBRARIES}")
+message(STATUS "Using system FriBidi: ${FRIBIDI_LIBRARIES}")
 
 # Add include directories
 include_directories(
