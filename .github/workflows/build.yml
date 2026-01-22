@@ -56,15 +56,20 @@ jobs:
             sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
           fi
           
+      - name: تثبيت Autobuild
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install autobuild llbase
+          
       - name: تهيئة البناء
         run: |
           cd firestorm
-          ./autobuild configure -c ReleaseOS -DSTANDALONE:BOOL=ON
+          autobuild configure -c ReleaseOS -DSTANDALONE:BOOL=ON
           
       - name: البناء
         run: |
           cd firestorm
-          ./autobuild build -c ReleaseOS -- -j2
+          autobuild build -c ReleaseOS -- -j2
           
       - name: رفع النتيجة
         uses: actions/upload-artifact@v4
