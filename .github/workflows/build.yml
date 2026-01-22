@@ -31,9 +31,8 @@ jobs:
 
       - name: Run Build
         run: |
-          # تأكد من أن المجلد اسمه firestorm فعلياً في مستودعك
           if [ -d "firestorm" ]; then
             cd firestorm
           fi
-          # تشغيل autobuild كأمر نظام وليس كملف محلي
-          autobuild build --p linden-release-64
+          # استخدام المنصة linux64 المتوافقة مع أنظمة أوبونتو
+          autobuild build -p linux64
