@@ -7,72 +7,33 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04
-    
+    runs-on: ubuntu-latest
+
     steps:
-    - name: تحميل المستودع
-      uses: actions/checkout@v4
-      
-    - name: تثبيت المتطلبات
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake git python3 wget curl
-        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libx11-dev
-        sudo apt-get install -y libxinerama-dev libxrandr-dev libxi-dev
-        sudo apt-get install -y libharfbuzz-dev libfribidi-dev libicu-dev
-        sudo apt-get install -y libfreetype6-dev libboost-all-dev libssl-dev
-        
-    - name: استنساخ Firestorm
-      run: |
-        git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
-        cd firestorm
-        echo "تم استنساخ Firestorm بنجاح"
-        
-    - name: نسخ ملفات دعم العربية
-      run: |
-        mkdir -p firestorm/indra/llui
-        cp llarabicsupport.h firestorm/indra/llui/ || echo "تحذير: لم يتم نسخ llarabicsupport.h"
-        cp llarabicsupport.cpp firestorm/indra/llui/ || echo "تحذير: لم يتم نسخ llarabicsupport.cpp"
-        mkdir -p firestorm/indra/cmake
-        cp Arabic.cmake firestorm/indra/cmake/ || echo "تحذير: لم يتم نسخ Arabic.cmake"
-        echo "تم نسخ ملفات دعم العربية"
-        
-    - name: تحميل الخط العربي
-      run: |
-        mkdir -p firestorm/indra/newview/skins/default/fonts
-        wget -q -O firestorm/indra/newview/skins/default/fonts/NotoSansArabic-Regular.ttf \
-          "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf"
-        echo "تم تحميل الخط العربي"
-        
-    - name: تعديل ملفات البناء
-      run: |
-        cd firestorm
-        if [ -f "indra/llui/CMakeLists.txt" ]; then
-          if ! grep -q "include(Arabic)" indra/llui/CMakeLists.txt; then
-            sed -i '1i include(Arabic)' indra/llui/CMakeLists.txt
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies and Arabic Support
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libfribidi-dev libharfbuzz-dev libgl1-mesa-dev libglu1-mesa-dev
+
+      - name: Install Autobuild
+        run: |
+          python3 -m pip install autobuild
+
+      - name: Run Build
+        run: |
+          # تأكد من أن المجلد اسمه firestorm فعلياً في مستودعك
+          if [ -d "firestorm" ]; then
+            cd firestorm
           fi
-          if ! grep -q "llarabicsupport.cpp" indra/llui/CMakeLists.txt; then
-            sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
-          fi
-          echo "تم تعديل ملفات البناء"
-        fi
-        
-    - name: تهيئة البناء
-      run: |
-        cd firestorm
-        ./autobuild configure -c ReleaseOS -DSTANDALONE:BOOL=ON
-        
-    - name: بناء Sela Viewer
-      run: |
-        cd firestorm
-        echo "بدء البناء - سيستغرق 1-2 ساعة..."
-        ./autobuild build -c ReleaseOS -- -j2
-        echo "اكتمل البناء!"
-        
-    - name: رفع البرنامج الجاهز
-      uses: actions/upload-artifact@v4
-      if: success()
-      with:
-        name: Sela-Viewer-Linux
-        path: firestorm/build-linux-x86_64/newview/packaged/
-        retention-days: 30
+          # تشغيل autobuild كأمر نظام وليس كملف محلي
+          autobuild build --p linden-release-64
