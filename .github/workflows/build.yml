@@ -39,8 +39,11 @@ jobs:
       - name: استنساخ Firestorm
         run: |
           git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
-          cd firestorm
-          echo "تم استنساخ Firestorm"
+          
+      - name: تحميل ملف المتغيرات
+        run: |
+          git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
+          echo "AUTOBUILD_VARIABLES_FILE=$(pwd)/build-variables/variables" >> $GITHUB_ENV
           
       - name: نسخ ملفات العربية
         run: |
