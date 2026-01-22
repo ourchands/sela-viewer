@@ -1,8 +1,8 @@
-name: بناء Sela Viewer تلقائياً
+name: بناء Sela Viewer
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -10,182 +10,69 @@ jobs:
     runs-on: ubuntu-22.04
     
     steps:
-    - name: 📥 تحميل ملفات المستودع
+    - name: تحميل المستودع
       uses: actions/checkout@v4
       
-    - name: 🔧 تثبيت المتطلبات الأساسية
+    - name: تثبيت المتطلبات
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          cmake \
-          git \
-          python3 \
-          python3-pip \
-          wget \
-          curl
+        sudo apt-get install -y build-essential cmake git python3 wget curl
+        sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libx11-dev
+        sudo apt-get install -y libxinerama-dev libxrandr-dev libxi-dev
+        sudo apt-get install -y libharfbuzz-dev libfribidi-dev libicu-dev
+        sudo apt-get install -y libfreetype6-dev libboost-all-dev libssl-dev
         
-    - name: 📚 تثبيت مكتبات التطوير
-      run: |
-        sudo apt-get install -y \
-          libgl1-mesa-dev \
-          libglu1-mesa-dev \
-          libx11-dev \
-          libxinerama-dev \
-          libxrandr-dev \
-          libxi-dev \
-          libxcursor-dev \
-          libfreetype6-dev \
-          libfontconfig1-dev \
-          libasound2-dev \
-          libpulse-dev \
-          libssl-dev \
-          libboost-all-dev
-        
-    - name: 🌐 تثبيت مكتبات دعم اللغة العربية
-      run: |
-        sudo apt-get install -y \
-          libharfbuzz-dev \
-          libfribidi-dev \
-          libicu-dev
-        
-    - name: 📦 استنساخ Firestorm Viewer
+    - name: استنساخ Firestorm
       run: |
         git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
         cd firestorm
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "main")
-        echo "استخدام الإصدار: $LATEST_TAG"
+        echo "تم استنساخ Firestorm بنجاح"
         
-    - name: 🔤 إضافة ملفات دعم اللغة العربية
+    - name: نسخ ملفات دعم العربية
       run: |
-        # نسخ ملفات دعم العربية
         mkdir -p firestorm/indra/llui
         cp llarabicsupport.h firestorm/indra/llui/ || echo "تحذير: لم يتم نسخ llarabicsupport.h"
         cp llarabicsupport.cpp firestorm/indra/llui/ || echo "تحذير: لم يتم نسخ llarabicsupport.cpp"
-        
-        # نسخ ملف CMake
         mkdir -p firestorm/indra/cmake
         cp Arabic.cmake firestorm/indra/cmake/ || echo "تحذير: لم يتم نسخ Arabic.cmake"
+        echo "تم نسخ ملفات دعم العربية"
         
-        echo "✅ تم نسخ ملفات دعم العربية"
-        
-    - name: 🖋️ تحميل الخط العربي
+    - name: تحميل الخط العربي
       run: |
         mkdir -p firestorm/indra/newview/skins/default/fonts
         wget -q -O firestorm/indra/newview/skins/default/fonts/NotoSansArabic-Regular.ttf \
           "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf"
-        echo "✅ تم تحميل الخط العربي"
+        echo "تم تحميل الخط العربي"
         
-    - name: ⚙️ تعديل ملفات البناء
+    - name: تعديل ملفات البناء
       run: |
         cd firestorm
-        
-        # تعديل CMakeLists.txt لإضافة دعم العربية
         if [ -f "indra/llui/CMakeLists.txt" ]; then
-          # إضافة include للعربية
           if ! grep -q "include(Arabic)" indra/llui/CMakeLists.txt; then
             sed -i '1i include(Arabic)' indra/llui/CMakeLists.txt
           fi
-          
-          # إضافة ملفات المصدر
           if ! grep -q "llarabicsupport.cpp" indra/llui/CMakeLists.txt; then
             sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
           fi
-          
-          if ! grep -q "llarabicsupport.h" indra/llui/CMakeLists.txt; then
-            sed -i '/set(llui_HEADER_FILES/a \    llarabicsupport.h' indra/llui/CMakeLists.txt
-          fi
-          
-          echo "✅ تم تعديل ملفات البناء"
+          echo "تم تعديل ملفات البناء"
         fi
         
-    - name: 🏗️ تهيئة البناء
+    - name: تهيئة البناء
       run: |
         cd firestorm
-        ./autobuild configure -c ReleaseOS -- \
-          -DVIEWER_CHANNEL="Sela Viewer" \
-          -DVIEWER_SHORT_NAME="Sela" \
-          -DSTANDALONE:BOOL=ON
+        ./autobuild configure -c ReleaseOS -DSTANDALONE:BOOL=ON
         
-    - name: 🔨 بناء Sela Viewer
+    - name: بناء Sela Viewer
       run: |
         cd firestorm
-        echo "⏰ بدء البناء - قد يستغرق 1-2 ساعة..."
+        echo "بدء البناء - سيستغرق 1-2 ساعة..."
         ./autobuild build -c ReleaseOS -- -j2
-        echo "✅ اكتمل البناء بنجاح!"
+        echo "اكتمل البناء!"
         
-    - name: 📦 إنشاء الحزمة
-      run: |
-        cd firestorm
-        ./autobuild package -c ReleaseOS || echo "تحذير: فشل إنشاء الحزمة"
-        
-    - name: 📤 رفع البرنامج الجاهز
+    - name: رفع البرنامج الجاهز
       uses: actions/upload-artifact@v4
+      if: success()
       with:
-        name: Sela-Viewer-Linux-x64
-        path: |
-          firestorm/build-linux-x86_64/newview/packaged/*
-          !firestorm/build-linux-x86_64/newview/packaged/*.tar.*
+        name: Sela-Viewer-Linux
+        path: firestorm/build-linux-x86_64/newview/packaged/
         retention-days: 30
-        if-no-files-found: warn
-```
-
-#### الخطوة 4: حفظ الملف
-1. انزل للأسفل
-2. في مربع "Commit message" اكتب:
-```
-   إضافة البناء التلقائي لـ Sela Viewer
-```
-3. اضغط الزر الأخضر **"Commit changes"**
-
----
-
-## ⚙️ تشغيل البناء التلقائي:
-
-بعد حفظ الملف، اتبع هذه الخطوات:
-
-### 1️⃣ اذهب إلى تبويب Actions
-في أعلى صفحة المستودع، اضغط على **"Actions"**
-
-### 2️⃣ ستجد Workflow جديد
-اسمه: **"بناء Sela Viewer تلقائياً"**
-
-### 3️⃣ شغّل البناء
-1. اضغط على اسم الـ workflow
-2. على اليمين، اضغط **"Run workflow"**
-3. في القائمة المنسدلة، تأكد من اختيار **"Branch: main"** (أو master)
-4. اضغط الزر الأخضر **"Run workflow"**
-
-### 4️⃣ تابع التقدم
-- سترى دائرة صفراء 🟡 = جارٍ البناء
-- انتظر 1-2 ساعة ⏰
-- عند الانتهاء:
-  - ✅ علامة خضراء = نجح!
-  - ❌ علامة حمراء = فشل
-
----
-
-## 📥 تحميل البرنامج الجاهز:
-
-عندما يكتمل البناء بنجاح (✅ أخضر):
-
-1. اضغط على اسم البناء الناجح
-2. انزل للأسفل حتى ترى **"Artifacts"**
-3. ستجد: **"Sela-Viewer-Linux-x64"**
-4. اضغط عليه للتحميل (ملف ZIP)
-5. فك الضغط على جهازك
-6. شغّل البرنامج!
-
----
-
-## 📊 ملخص الخطوات:
-```
-✅ 1. رفعت الملفات (أكملت!)
-✅ 2. أنشئ ملف .github/workflows/build.yml
-✅ 3. انسخ الكود أعلاه
-✅ 4. احفظ الملف
-✅ 5. اذهب لـ Actions
-✅ 6. شغّل "Run workflow"
-✅ 7. انتظر 1-2 ساعة ☕
-✅ 8. حمّل البرنامج الجاهز
-✅ 9. استمتع! 🎉
