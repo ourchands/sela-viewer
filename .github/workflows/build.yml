@@ -10,73 +10,78 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-22.04
-    timeout-minutes: 180
+    timeout-minutes: 360
     
     steps:
       - name: تحميل المستودع
         uses: actions/checkout@v4
         
+      - name: إعداد Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
       - name: تثبيت المتطلبات الأساسية
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git python3 wget curl
-          
-      - name: تثبيت مكتبات التطوير
-        run: |
+          sudo apt-get install -y build-essential cmake git wget curl
           sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libx11-dev
           sudo apt-get install -y libxinerama-dev libxrandr-dev libxi-dev
-          sudo apt-get install -y libfreetype6-dev libboost-all-dev libssl-dev
-          
-      - name: تثبيت مكتبات العربية
-        run: |
           sudo apt-get install -y libharfbuzz-dev libfribidi-dev libicu-dev
+          sudo apt-get install -y libfreetype6-dev libboost-all-dev libssl-dev
+          sudo apt-get install -y libpulse-dev libasound2-dev
+          
+      - name: تثبيت Autobuild
+        run: |
+          pip3 install --user autobuild
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           
       - name: استنساخ Firestorm
         run: |
           git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
+          cd firestorm
+          echo "تم استنساخ Firestorm"
           
       - name: نسخ ملفات العربية
         run: |
           mkdir -p firestorm/indra/llui
-          cp llarabicsupport.h firestorm/indra/llui/ || true
-          cp llarabicsupport.cpp firestorm/indra/llui/ || true
+          cp llarabicsupport.h firestorm/indra/llui/ 2>/dev/null || echo "⚠ llarabicsupport.h"
+          cp llarabicsupport.cpp firestorm/indra/llui/ 2>/dev/null || echo "⚠ llarabicsupport.cpp"
           mkdir -p firestorm/indra/cmake
-          cp Arabic.cmake firestorm/indra/cmake/ || true
+          cp Arabic.cmake firestorm/indra/cmake/ 2>/dev/null || echo "⚠ Arabic.cmake"
           
       - name: تحميل الخط العربي
         run: |
           mkdir -p firestorm/indra/newview/skins/default/fonts
-          wget -O firestorm/indra/newview/skins/default/fonts/NotoSansArabic-Regular.ttf https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf
+          wget -q -O firestorm/indra/newview/skins/default/fonts/NotoSansArabic-Regular.ttf \
+            https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf
           
       - name: تعديل CMakeLists
         run: |
           cd firestorm
           if [ -f "indra/llui/CMakeLists.txt" ]; then
-            sed -i '1i include(Arabic)' indra/llui/CMakeLists.txt
-            sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
+            if ! grep -q "include(Arabic)" indra/llui/CMakeLists.txt; then
+              sed -i '1i include(Arabic)' indra/llui/CMakeLists.txt
+            fi
+            if ! grep -q "llarabicsupport.cpp" indra/llui/CMakeLists.txt; then
+              sed -i '/set(llui_SOURCE_FILES/a \    llarabicsupport.cpp' indra/llui/CMakeLists.txt
+            fi
           fi
-          
-      - name: إعداد بيئة البناء
-        run: |
-          cd firestorm
-          python3 -m pip install --upgrade pip
-          python3 -m pip install certifi
-          python3 bin/autobuild install --all
           
       - name: تهيئة البناء
         run: |
           cd firestorm
-          python3 bin/autobuild configure -c ReleaseOS -- -DSTANDALONE:BOOL=ON
+          autobuild configure -A 64 -c ReleaseFS_open
           
       - name: البناء
         run: |
           cd firestorm
-          python3 bin/autobuild build -c ReleaseOS -- -j2
+          autobuild build -A 64 -c ReleaseFS_open --no-configure
           
-      - name: رفع النتيجة
+      - name: رفع البرنامج الجاهز
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: Sela-Viewer-Linux
+          name: Sela-Viewer-Linux-x64
           path: firestorm/build-linux-x86_64/newview/packaged/
           retention-days: 30
