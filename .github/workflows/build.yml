@@ -71,15 +71,10 @@ jobs:
             fi
           fi
           
-      - name: تهيئة البناء
+      - name: التهيئة والبناء معاً
         run: |
           cd firestorm
-          autobuild configure -A 64 -c ReleaseFS_open
-          
-      - name: البناء
-        run: |
-          cd firestorm
-          autobuild build -A 64 -c ReleaseFS_open --no-configure
+          autobuild build -A 64 -c ReleaseFS_open
           
       - name: رفع البرنامج الجاهز
         uses: actions/upload-artifact@v4
