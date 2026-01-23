@@ -13,44 +13,44 @@ jobs:
       - checkout
       
       - run:
-          name: "Install Python"
+          name: Install Python
           command: |
             choco install python --version 3.10.0 -y --force
             refreshenv
       
       - run:
-          name: "Install Autobuild"
+          name: Install Autobuild
           command: |
             python -m pip install --upgrade pip
             pip install autobuild
       
       - run:
-          name: "Clone Firestorm"
+          name: Clone Firestorm
           command: |
             git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
       
       - run:
-          name: "Load Variables File"
+          name: Load Variables File
           command: |
             git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
             $env:AUTOBUILD_VARIABLES_FILE = "$PWD\build-variables\variables"
             echo "AUTOBUILD_VARIABLES_FILE=$PWD\build-variables\variables" | Out-File -Append $env:GITHUB_ENV
       
       - run:
-          name: "Copy Arabic Support Files"
+          name: Copy Arabic Support Files
           command: |
             Copy-Item llarabicsupport.h firestorm\indra\llui\ -ErrorAction SilentlyContinue
             Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -ErrorAction SilentlyContinue
             Copy-Item Arabic.cmake firestorm\indra\cmake\ -ErrorAction SilentlyContinue
       
       - run:
-          name: "Download Arabic Font"
+          name: Download Arabic Font
           command: |
             New-Item -ItemType Directory -Force -Path firestorm\indra\newview\skins\default\fonts
             Invoke-WebRequest -Uri "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf" -OutFile firestorm\indra\newview\skins\default\fonts\NotoSansArabic-Regular.ttf
       
       - run:
-          name: "Copy Customization Files"
+          name: Copy Customization Files
           command: |
             Copy-Item sela_icon.png firestorm\indra\newview\icons\default\viewer_icon.png -ErrorAction SilentlyContinue
             Copy-Item sela_splash.png firestorm\indra\newview\skins\default\textures\startup_logo.png -ErrorAction SilentlyContinue
@@ -59,7 +59,7 @@ jobs:
             Copy-Item strings.xml firestorm\indra\newview\skins\default\xui\en\strings.xml -Force
       
       - run:
-          name: "Modify CMakeLists"
+          name: Modify CMakeLists
           command: |
             cd firestorm
             if (Test-Path "indra\llui\CMakeLists.txt") {
@@ -71,7 +71,7 @@ jobs:
             }
       
       - run:
-          name: "Build Project"
+          name: Build Project
           command: |
             cd firestorm
             $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
@@ -79,40 +79,34 @@ jobs:
           no_output_timeout: 5h
       
       - run:
-          name: "Package Artifacts"
+          name: Package Artifacts
           command: |
             New-Item -ItemType Directory -Force -Path artifacts
             Compress-Archive -Path firestorm\build-vc*-64\newview\Release\* -DestinationPath artifacts\Sela-Viewer-Windows-x64.zip
-            $readmeContent = @"
-Sela Viewer 1.0.0
-=================
-
-First professional viewer with full Arabic language support
-
-Developer: Ourchands Company
-Email: team@ourchands.com
-Website: www.ourchands.com
-
-Installation:
--------------
-1. Extract the archive
-2. Run SelaViewer.exe
-3. Enjoy!
-
-Requirements:
--------------
-- Windows 10/11 (64-bit)
-- 4 GB RAM (8 GB recommended)
-- Graphics card with OpenGL 3.0 support
-
-License: LGPL-2.1
-Source Code: https://github.com/ourchands/sela-viewer
-
----
-This viewer is not provided or supported by Linden Lab.
-Based on Firestorm Viewer (c) 2010-2026
-"@
-            $readmeContent | Out-File -FilePath artifacts\README.txt -Encoding UTF8
+            "Sela Viewer 1.0.0" | Out-File -FilePath artifacts\README.txt -Encoding UTF8
+            "=================" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "First professional viewer with full Arabic language support" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Developer: Ourchands Company" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Email: team@ourchands.com" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Website: www.ourchands.com" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Installation:" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "1. Extract the archive" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "2. Run SelaViewer.exe" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "3. Enjoy!" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Requirements:" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "- Windows 10/11 (64-bit)" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "- 4 GB RAM (8 GB recommended)" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "- Graphics card with OpenGL 3.0 support" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "License: LGPL-2.1" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Source Code: https://github.com/ourchands/sela-viewer" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "This viewer is not provided or supported by Linden Lab." | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
+            "Based on Firestorm Viewer (c) 2010-2026" | Out-File -FilePath artifacts\README.txt -Encoding UTF8 -Append
       
       - store_artifacts:
           path: artifacts
