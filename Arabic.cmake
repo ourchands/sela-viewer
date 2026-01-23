@@ -1,53 +1,51 @@
-# -*- cmake -*-
-# Arabic.cmake - Configuration for Arabic text support libraries
-# Part of Sela Viewer project
+# Arabic.cmake - Arabic language support for Firestorm Viewer
 
-include(FindPkgConfig)
+# On Windows, we'll skip the HarfBuzz dependency check since it's not available via pkg-config
+# The Arabic support files will be compiled without external HarfBuzz dependency
 
-set(ARABIC_FIND_REQUIRED ON)
-
-# Find system libraries (HarfBuzz and FriBidi)
-pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
-if (NOT HARFBUZZ_FOUND)
-    message(FATAL_ERROR "HarfBuzz not found. Please install libharfbuzz-dev")
-endif()
-
-pkg_check_modules(FRIBIDI REQUIRED fribidi)
-if (NOT FRIBIDI_FOUND)
-    message(FATAL_ERROR "FriBidi not found. Please install libfribidi-dev")
-endif()
-
-message(STATUS "Using system HarfBuzz: ${HARFBUZZ_LIBRARIES}")
-message(STATUS "Using system FriBidi: ${FRIBIDI_LIBRARIES}")
-
-# Add include directories
-include_directories(
-    ${HARFBUZZ_INCLUDE_DIRS}
-    ${FRIBIDI_INCLUDE_DIRS}
-)
-
-# Add library directories
-if (DEFINED HARFBUZZ_LIBRARY_DIRS)
+if(WINDOWS)
+    # Windows doesn't use pkg-config, so we skip the HarfBuzz check
+    message(STATUS "Building with Arabic support for Windows (without external HarfBuzz)")
+    
+    # Add the Arabic support source files
+    set(ARABIC_SUPPORT_SOURCES
+        llarabicsupport.cpp
+    )
+    
+    set(ARABIC_SUPPORT_HEADERS
+        llarabicsupport.h
+    )
+    
+    # These will be added to the llui library
+    list(APPEND llui_SOURCE_FILES ${ARABIC_SUPPORT_SOURCES})
+    list(APPEND llui_HEADER_FILES ${ARABIC_SUPPORT_HEADERS})
+    
+else()
+    # On Linux/Mac, use pkg-config to find HarfBuzz
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
+    
+    if(NOT HARFBUZZ_FOUND)
+        message(FATAL_ERROR "HarfBuzz not found. Please install libharfbuzz-dev")
+    endif()
+    
+    # Add the Arabic support source files
+    set(ARABIC_SUPPORT_SOURCES
+        llarabicsupport.cpp
+    )
+    
+    set(ARABIC_SUPPORT_HEADERS
+        llarabicsupport.h
+    )
+    
+    # Add to llui library
+    list(APPEND llui_SOURCE_FILES ${ARABIC_SUPPORT_SOURCES})
+    list(APPEND llui_HEADER_FILES ${ARABIC_SUPPORT_HEADERS})
+    
+    # Add HarfBuzz include directories and libraries
+    include_directories(${HARFBUZZ_INCLUDE_DIRS})
     link_directories(${HARFBUZZ_LIBRARY_DIRS})
+    
 endif()
 
-if (DEFINED FRIBIDI_LIBRARY_DIRS)
-    link_directories(${FRIBIDI_LIBRARY_DIRS})
-endif()
-
-# Create convenience variables for linking
-set(ARABIC_LIBRARIES
-    ${HARFBUZZ_LIBRARIES}
-    ${FRIBIDI_LIBRARIES}
-)
-
-# Export for use in other CMakeLists
-set(ARABIC_INCLUDE_DIRS
-    ${HARFBUZZ_INCLUDE_DIRS}
-    ${FRIBIDI_INCLUDE_DIRS}
-    PARENT_SCOPE
-)
-
-set(ARABIC_LIBRARIES ${ARABIC_LIBRARIES} PARENT_SCOPE)
-
-message(STATUS "Arabic support libraries configured successfully")
+message(STATUS "Arabic language support enabled")
