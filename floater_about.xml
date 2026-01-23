@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<floater
+	legacy_header_height="18"
+	height="440"
+	layout="topleft"
+	name="floater_about"
+	help_topic="floater_about"
+	save_rect="true"
+	title="حول Sela Viewer"
+	width="470">
+	<floater.string
+		name="AboutHeader">
+		[APP_NAME] [VIEWER_VERSION_0].[VIEWER_VERSION_1].[VIEWER_VERSION_2] ([VIEWER_VERSION_3]) [BUILD_DATE] [BUILD_TIME] ([CHANNEL])
+	</floater.string>
+	<floater.string
+		name="AboutCompiler">
+		تم البناء باستخدام [COMPILER] الإصدار [COMPILER_VERSION]
+	</floater.string>
+	<floater.string
+		name="AboutPosition">
+		أنت في [POSITION_LOCAL_0,number,1], [POSITION_LOCAL_1,number,1], [POSITION_LOCAL_2,number,1] في [REGION] الموجود في &lt;nolink&gt;[HOSTNAME]&lt;/nolink&gt; ([HOSTIP])
+SLURL: &lt;nolink&gt;[SLURL]&lt;/nolink&gt;
+(الإحداثيات العالمية [POSITION_0,number,1], [POSITION_1,number,1], [POSITION_2,number,1])
+[SERVER_VERSION]
+[SERVER_RELEASE_NOTES_URL]
+	</floater.string>
+	<floater.string
+		name="AboutSystem">
+		المعالج: [CPU]
+الذاكرة: [MEMORY_MB] ميجابايت
+إصدار نظام التشغيل: [OS_VERSION]
+بطاقة الرسومات: [GRAPHICS_CARD_VENDOR]
+بطاقة الرسومات: [GRAPHICS_CARD]
+	</floater.string>
+	<floater.string
+		name="AboutDriver">
+		إصدار تعريف بطاقة الرسومات: [GRAPHICS_CARD_VENDOR] [GRAPHICS_DRIVER_VERSION]
+	</floater.string>
+	<floater.string
+		name="AboutLibs">
+		إصدار OpenGL: [OPENGL_VERSION]
+إصدار libcurl: [LIBCURL_VERSION]
+إصدار J2C Decoder: [J2C_VERSION]
+إصدار Audio Driver: [AUDIO_DRIVER_VERSION]
+إصدار Qt Webkit: [QT_WEBKIT_VERSION]
+إصدار Vivox: [VIVOX_VERSION]
+	</floater.string>
+	<floater.string
+		name="none">
+		(لا شيء)
+	</floater.string>
+	<floater.string
+		name="AboutTraffic">
+		حزم مفقودة: [PACKETS_LOST,number,0]/[PACKETS_IN,number,0] ([PACKETS_PCT,number,1]%)
+	</floater.string>
+	<floater.string
+		name="ErrorFetchingServerReleaseNotesURL">
+		خطأ في جلب عنوان ملاحظات إصدار الخادم.
+	</floater.string>
+	<tab_container
+		follows="all"
+		top="25"
+		left="0"
+		width="470"
+		height="405"
+		name="about_tab"
+		tab_position="top">
+		<panel
+			follows="all"
+			label="المعلومات"
+			help_topic="about_support_tab"
+			name="support_tab"
+			title="المعلومات">
+			<text_editor
+				follows="top|left|right"
+				top="10"
+				left="10"
+				right="-10"
+				height="350"
+				bg_readonly_color="Transparent"
+				text_readonly_color="LabelTextColor"
+				name="support_editor"
+				max_length="65536"
+				word_wrap="true"
+				parse_urls="true"
+				allow_html="true"
+				read_only="true">
+
+╔════════════════════════════════════════╗
+║         🌟 Sela Viewer 🌟              ║
+║   أول فيور احترافي يدعم العربية       ║
+╚════════════════════════════════════════╝
+
+المطور: شركة أيادينا المدعة
+البريد الإلكتروني: team@ourchands.com
+الموقع الرسمي: www.ourchands.com
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 خدماتنا:
+
+✅ تنفيذ مشاريع Second Life
+✅ برمجة السكربتات حسب الطلب
+✅ الدعم الفني المتكامل
+✅ استشارات تقنية متخصصة
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📧 للتواصل والطلبات:
+team@ourchands.com
+
+🌐 زوروا موقعنا:
+www.ourchands.com
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 المواصفات التقنية:
+
+مبني على: Firestorm Viewer
+الإصدار: [VIEWER_VERSION_0].[VIEWER_VERSION_1].[VIEWER_VERSION_2]
+الترخيص: LGPL-2.1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ إخلاء المسؤولية:
+
+Sela Viewer مبني على Firestorm Viewer
+© 2010-2026 The Phoenix Firestorm Project, Inc.
+
+This software is not provided or supported by 
+Linden Lab, the makers of Second Life.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📜 الكود المصدري متاح على:
+https://github.com/ourchands/sela-viewer
+
+الترخيص: LGPL-2.1 (مفتوح المصدر)
+
+			</text_editor>
+		</panel>
+		<panel
+			follows="all"
+			label="Credits"
+			help_topic="about_credits_tab"
+			name="credits_tab"
+			title="Credits">
+			<text_editor
+				follows="all"
+				top="10"
+				left="10"
+				right="-10"
+				height="360"
+				bg_readonly_color="Transparent"
+				text_readonly_color="LabelTextColor"
+				name="credits_editor"
+				max_length="65536"
+				word_wrap="true"
+				parse_urls="true"
+				allow_html="true"
+				read_only="true">
+Sela Viewer Development Team:
+شركة أيادينا المدعة
+team@ourchands.com
+
+Based on Firestorm Viewer
+Copyright © 2010-2026 The Phoenix Firestorm Project, Inc.
+
+Thanks to all contributors and the open source community.
+			</text_editor>
+		</panel>
+	</tab_container>
+</floater>

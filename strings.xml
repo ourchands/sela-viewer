@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<strings>
+	<!-- Application Name -->
+	<string name="APP_NAME">Sela Viewer</string>
+	<string name="SECOND_LIFE">Second Life</string>
+	
+	<!-- Window Titles -->
+	<string name="CAPITALIZED_APP_NAME">SELA VIEWER</string>
+	<string name="SUPPORT_SITE">www.ourchands.com</string>
+	
+	<!-- About -->
+	<string name="AboutHeader">Sela Viewer - أول فيور عربي احترافي</string>
+	<string name="AboutCompany">شركة أيادينا المدعة</string>
+	<string name="AboutWebsite">www.ourchands.com</string>
+	<string name="AboutEmail">team@ourchands.com</string>
+	
+	<!-- Splash Screen Text -->
+	<string name="StartupLoading">جاري تحميل Sela Viewer...</string>
+	<string name="LoginInProgress">جاري تسجيل الدخول...</string>
+	
+	<!-- Default Messages -->
+	<string name="WelcomeMessage">أهلاً بكم في Sela Viewer - أول فيور يدعم اللغة العربية بشكل كامل!</string>
+	
+	<!-- Credits -->
+	<string name="BasedOn">مبني على Firestorm Viewer</string>
+	<string name="DevelopedBy">تطوير: شركة أيادينا المدعة</string>
+</strings>
