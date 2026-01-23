@@ -8,6 +8,74 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-windows:
+    runs-on: windows-2022
+    timeout-minutes: 360
+    
+    steps:
+      - name: تحميل المستودع
+        uses: actions/checkout@v4
+        
+      - name: إعداد Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: تثبيت Autobuild
+        run: |
+          pip install --user autobuild
+          echo "$env:USERPROFILE\.local\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+      - name: استنساخ Firestorm
+        run: |
+          git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
+          
+      - name: تحميل ملف المتغيرات
+        run: |
+          git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
+          echo "AUTOBUILD_VARIABLES_FILE=$pwd\build-variables\variables" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          
+      - name: نسخ ملفات العربية
+        run: |
+          New-Item -ItemType Directory -Force -Path firestorm\indra\llui
+          Copy-Item llarabicsupport.h firestorm\indra\llui\ -ErrorAction SilentlyContinue
+          Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path firestorm\indra\cmake
+          Copy-Item Arabic.cmake firestorm\indra\cmake\ -ErrorAction SilentlyContinue
+          
+      - name: تحميل الخط العربي
+        run: |
+          New-Item -ItemType Directory -Force -Path firestorm\indra\newview\skins\default\fonts
+          Invoke-WebRequest -Uri "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf" -OutFile firestorm\indra\newview\skins\default\fonts\NotoSansArabic-Regular.ttf
+          
+      - name: تعديل CMakeLists
+        run: |
+          cd firestorm
+          if (Test-Path "indra\llui\CMakeLists.txt") {
+            $content = Get-Content "indra\llui\CMakeLists.txt"
+            if ($content -notmatch "include\(Arabic\)") {
+              $content = "include(Arabic)`n" + $content
+              Set-Content "indra\llui\CMakeLists.txt" $content
+            }
+            if ($content -notmatch "llarabicsupport.cpp") {
+              $content = $content -replace '(set\(llui_SOURCE_FILES)', "`$1`n    llarabicsupport.cpp"
+              Set-Content "indra\llui\CMakeLists.txt" $content
+            }
+          }
+          
+      - name: التهيئة والبناء
+        run: |
+          cd firestorm
+          autobuild build -A 64 -c ReleaseFS_open
+          
+      - name: رفع البرنامج الجاهز
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: Sela-Viewer-Windows-x64
+          path: firestorm\build-vc*-64\newview\Release\
+          retention-days: 30
+
   build-linux:
     runs-on: ubuntu-22.04
     timeout-minutes: 360
