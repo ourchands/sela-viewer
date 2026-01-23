@@ -13,58 +13,53 @@ jobs:
       - checkout
       
       - run:
-          name: تثبيت Python
+          name: "Install Python"
           command: |
             choco install python --version 3.10.0 -y --force
             refreshenv
       
       - run:
-          name: تثبيت Autobuild
+          name: "Install Autobuild"
           command: |
             python -m pip install --upgrade pip
             pip install autobuild
       
       - run:
-          name: استنساخ Firestorm
+          name: "Clone Firestorm"
           command: |
             git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
       
       - run:
-          name: تحميل ملف المتغيرات
+          name: "Load Variables File"
           command: |
             git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
             $env:AUTOBUILD_VARIABLES_FILE = "$PWD\build-variables\variables"
             echo "AUTOBUILD_VARIABLES_FILE=$PWD\build-variables\variables" | Out-File -Append $env:GITHUB_ENV
       
       - run:
-          name: نسخ ملفات دعم العربية
+          name: "Copy Arabic Support Files"
           command: |
             Copy-Item llarabicsupport.h firestorm\indra\llui\ -ErrorAction SilentlyContinue
             Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -ErrorAction SilentlyContinue
             Copy-Item Arabic.cmake firestorm\indra\cmake\ -ErrorAction SilentlyContinue
       
       - run:
-          name: تحميل الخط العربي
+          name: "Download Arabic Font"
           command: |
             New-Item -ItemType Directory -Force -Path firestorm\indra\newview\skins\default\fonts
             Invoke-WebRequest -Uri "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf" -OutFile firestorm\indra\newview\skins\default\fonts\NotoSansArabic-Regular.ttf
       
       - run:
-          name: نسخ ملفات التخصيص
+          name: "Copy Customization Files"
           command: |
-            # نسخ الأيقونة
             Copy-Item sela_icon.png firestorm\indra\newview\icons\default\viewer_icon.png -ErrorAction SilentlyContinue
-            
-            # نسخ شاشة البداية
             Copy-Item sela_splash.png firestorm\indra\newview\skins\default\textures\startup_logo.png -ErrorAction SilentlyContinue
-            
-            # نسخ ملفات XML المخصصة
             Copy-Item floater_about.xml firestorm\indra\newview\skins\default\xui\en\floater_about.xml -Force
             Copy-Item panel_login.xml firestorm\indra\newview\skins\default\xui\en\panel_login.xml -Force
             Copy-Item strings.xml firestorm\indra\newview\skins\default\xui\en\strings.xml -Force
       
       - run:
-          name: تعديل CMakeLists
+          name: "Modify CMakeLists"
           command: |
             cd firestorm
             if (Test-Path "indra\llui\CMakeLists.txt") {
@@ -76,7 +71,7 @@ jobs:
             }
       
       - run:
-          name: البناء
+          name: "Build Project"
           command: |
             cd firestorm
             $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
@@ -84,41 +79,40 @@ jobs:
           no_output_timeout: 5h
       
       - run:
-          name: تجميع الملفات
+          name: "Package Artifacts"
           command: |
             New-Item -ItemType Directory -Force -Path artifacts
             Compress-Archive -Path firestorm\build-vc*-64\newview\Release\* -DestinationPath artifacts\Sela-Viewer-Windows-x64.zip
-            
-            # إنشاء ملف README
-            @"
+            $readmeContent = @"
 Sela Viewer 1.0.0
 =================
 
-أول فيور احترافي يدعم اللغة العربية بشكل كامل
+First professional viewer with full Arabic language support
 
-المطور: شركة أيادينا المدعة
-البريد: team@ourchands.com
-الموقع: www.ourchands.com
+Developer: Ourchands Company
+Email: team@ourchands.com
+Website: www.ourchands.com
 
-التثبيت:
----------
-1. فك ضغط الملف
-2. شغّل SelaViewer.exe
-3. استمتع!
+Installation:
+-------------
+1. Extract the archive
+2. Run SelaViewer.exe
+3. Enjoy!
 
-المتطلبات:
-----------
+Requirements:
+-------------
 - Windows 10/11 (64-bit)
-- 4 GB RAM (8 GB موصى به)
-- بطاقة رسومات تدعم OpenGL 3.0
+- 4 GB RAM (8 GB recommended)
+- Graphics card with OpenGL 3.0 support
 
-الترخيص: LGPL-2.1
-الكود المصدري: https://github.com/ourchands/sela-viewer
+License: LGPL-2.1
+Source Code: https://github.com/ourchands/sela-viewer
 
 ---
 This viewer is not provided or supported by Linden Lab.
-Based on Firestorm Viewer © 2010-2026
-"@ | Out-File -FilePath artifacts\README.txt -Encoding UTF8
+Based on Firestorm Viewer (c) 2010-2026
+"@
+            $readmeContent | Out-File -FilePath artifacts\README.txt -Encoding UTF8
       
       - store_artifacts:
           path: artifacts
