@@ -56,19 +56,23 @@ jobs:
               Copy-Item llarabicsupport.h firestorm\indra\llui\ -Force
               Write-Host "Copied llarabicsupport.h"
             } else {
-              Write-Host "WARNING: llarabicsupport.h not found"
+              Write-Host "ERROR: llarabicsupport.h not found - Arabic support will not work!"
+              exit 1
             }
             if (Test-Path "llarabicsupport.cpp") {
               Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -Force
               Write-Host "Copied llarabicsupport.cpp"
             } else {
-              Write-Host "WARNING: llarabicsupport.cpp not found"
+              Write-Host "ERROR: llarabicsupport.cpp not found - Arabic support will not work!"
+              exit 1
             }
             if (Test-Path "Arabic.cmake") {
               Copy-Item Arabic.cmake firestorm\indra\cmake\ -Force
               Write-Host "Copied Arabic.cmake"
+              Get-Content firestorm\indra\cmake\Arabic.cmake | Select-Object -First 10
             } else {
-              Write-Host "WARNING: Arabic.cmake not found"
+              Write-Host "ERROR: Arabic.cmake not found - Arabic support will not work!"
+              exit 1
             }
       
       - run:
