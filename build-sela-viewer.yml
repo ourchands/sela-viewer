@@ -1,0 +1,103 @@
+name: Build Sela Viewer
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    timeout-minutes: 360
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install autobuild llsd python-llbase
+      
+      - name: Clone Firestorm
+        run: |
+          git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
+      
+      - name: Clone build variables
+        run: |
+          git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
+      
+      - name: Copy Arabic support files
+        run: |
+          Copy-Item Arabic.cmake firestorm\indra\cmake\ -Force
+          Copy-Item llarabicsupport.h firestorm\indra\llui\ -Force
+          Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -Force
+      
+      - name: Download Arabic font
+        run: |
+          New-Item -ItemType Directory -Force -Path firestorm\indra\newview\skins\default\fonts
+          Invoke-WebRequest -Uri "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf" -OutFile firestorm\indra\newview\skins\default\fonts\NotoSansArabic-Regular.ttf
+      
+      - name: Copy customization files
+        run: |
+          if (Test-Path "sela_icon.png") {
+            Copy-Item sela_icon.png firestorm\indra\newview\icons\default\viewer_icon.png -Force
+          }
+          if (Test-Path "sela_splash.png") {
+            Copy-Item sela_splash.png firestorm\indra\newview\skins\default\textures\startup_logo.png -Force
+          }
+          if (Test-Path "floater_about.xml") {
+            Copy-Item floater_about.xml firestorm\indra\newview\skins\default\xui\en\floater_about.xml -Force
+          }
+          if (Test-Path "panel_login.xml") {
+            Copy-Item panel_login.xml firestorm\indra\newview\skins\default\xui\en\panel_login.xml -Force
+          }
+          if (Test-Path "strings.xml") {
+            Copy-Item strings.xml firestorm\indra\newview\skins\default\xui\en\strings.xml -Force
+          }
+      
+      - name: Modify CMakeLists
+        run: |
+          cd firestorm
+          $content = Get-Content "indra\llui\CMakeLists.txt" -Raw
+          if ($content -notmatch "include\(Arabic\)") {
+            $content = "include(Arabic)`n" + $content
+            Set-Content "indra\llui\CMakeLists.txt" $content
+          }
+      
+      - name: Configure build
+        run: |
+          cd firestorm
+          $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
+          autobuild configure -A 64 -c ReleaseFS_open
+      
+      - name: Build viewer
+        run: |
+          cd firestorm
+          $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
+          autobuild build -A 64 -c ReleaseFS_open --no-configure
+      
+      - name: Package artifacts
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          $buildPath = Get-ChildItem -Path firestorm -Filter "build-vc*-64" -Directory | Select-Object -First 1
+          if ($buildPath) {
+            $releasePath = Join-Path $buildPath.FullName "newview\Release"
+            if (Test-Path $releasePath) {
+              Compress-Archive -Path "$releasePath\*" -DestinationPath artifacts\Sela-Viewer-Windows-x64.zip
+            }
+          }
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sela-Viewer-Windows-x64
+          path: artifacts/Sela-Viewer-Windows-x64.zip
+          if-no-files-found: error
