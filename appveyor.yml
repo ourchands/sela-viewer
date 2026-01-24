@@ -1,0 +1,182 @@
+version: 1.0.{build}
+
+image: Visual Studio 2022
+
+platform:
+  - x64
+
+configuration:
+  - Release
+
+environment:
+  AUTOBUILD_BUILD_ID: "$(APPVEYOR_BUILD_NUMBER)"
+  PYTHON: "C:\\Python310"
+  PYTHON_VERSION: "3.10"
+  PYTHON_ARCH: "64"
+
+cache:
+  - C:\Users\appveyor\AppData\Local\Temp\install.cache.appveyor
+
+install:
+  - cmd: git config --global core.autocrlf false
+  - cmd: SET PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+  - cmd: python --version
+  - cmd: python -m pip install --upgrade pip setuptools wheel
+  - cmd: pip install autobuild llsd python-llbase
+  - cmd: autobuild --version
+
+build_script:
+  - ps: |
+      Write-Host "========================================="
+      Write-Host "Cloning Firestorm Viewer"
+      Write-Host "========================================="
+      git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
+      
+      Write-Host "========================================="
+      Write-Host "Cloning Build Variables"
+      Write-Host "========================================="
+      git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
+      
+      Write-Host "========================================="
+      Write-Host "Copying Arabic Support Files"
+      Write-Host "========================================="
+      Copy-Item Arabic.cmake firestorm\indra\cmake\ -Force -ErrorAction Stop
+      Copy-Item llarabicsupport.h firestorm\indra\llui\ -Force -ErrorAction Stop
+      Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -Force -ErrorAction Stop
+      Write-Host "Arabic support files copied successfully"
+      
+      Write-Host "========================================="
+      Write-Host "Downloading Arabic Font"
+      Write-Host "========================================="
+      New-Item -ItemType Directory -Force -Path firestorm\indra\newview\skins\default\fonts
+      Invoke-WebRequest -Uri "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf" -OutFile firestorm\indra\newview\skins\default\fonts\NotoSansArabic-Regular.ttf
+      Write-Host "Font downloaded successfully"
+      
+      Write-Host "========================================="
+      Write-Host "Copying Customization Files"
+      Write-Host "========================================="
+      if (Test-Path "sela_icon.png") {
+        Copy-Item sela_icon.png firestorm\indra\newview\icons\default\viewer_icon.png -Force
+        Write-Host "Icon copied"
+      }
+      if (Test-Path "sela_splash.png") {
+        Copy-Item sela_splash.png firestorm\indra\newview\skins\default\textures\startup_logo.png -Force
+        Write-Host "Splash screen copied"
+      }
+      if (Test-Path "floater_about.xml") {
+        Copy-Item floater_about.xml firestorm\indra\newview\skins\default\xui\en\floater_about.xml -Force
+        Write-Host "About dialog copied"
+      }
+      if (Test-Path "panel_login.xml") {
+        Copy-Item panel_login.xml firestorm\indra\newview\skins\default\xui\en\panel_login.xml -Force
+        Write-Host "Login panel copied"
+      }
+      if (Test-Path "strings.xml") {
+        Copy-Item strings.xml firestorm\indra\newview\skins\default\xui\en\strings.xml -Force
+        Write-Host "Strings copied"
+      }
+      
+      Write-Host "========================================="
+      Write-Host "Modifying CMakeLists.txt"
+      Write-Host "========================================="
+      cd firestorm
+      $cmakePath = "indra\llui\CMakeLists.txt"
+      if (Test-Path $cmakePath) {
+        $content = Get-Content $cmakePath -Raw
+        if ($content -notmatch "include\(Arabic\)") {
+          $content = "include(Arabic)`n" + $content
+          Set-Content $cmakePath $content
+          Write-Host "CMakeLists modified successfully"
+        }
+      }
+      
+      Write-Host "========================================="
+      Write-Host "Starting Build Process"
+      Write-Host "========================================="
+      $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
+      $env:AUTOBUILD_BUILD_ID = $env:APPVEYOR_BUILD_NUMBER
+      
+      Write-Host "Environment variables:"
+      Write-Host "AUTOBUILD_VARIABLES_FILE: $env:AUTOBUILD_VARIABLES_FILE"
+      Write-Host "AUTOBUILD_BUILD_ID: $env:AUTOBUILD_BUILD_ID"
+      
+      Write-Host "========================================="
+      Write-Host "Running Autobuild..."
+      Write-Host "========================================="
+      autobuild build -A 64 -c ReleaseFS_open
+      
+      if ($LASTEXITCODE -ne 0) {
+        Write-Host "Build failed with exit code: $LASTEXITCODE"
+        exit $LASTEXITCODE
+      }
+      
+      Write-Host "========================================="
+      Write-Host "Build completed successfully!"
+      Write-Host "========================================="
+
+after_build:
+  - ps: |
+      Write-Host "========================================="
+      Write-Host "Packaging Artifacts"
+      Write-Host "========================================="
+      New-Item -ItemType Directory -Force -Path artifacts
+      
+      $buildDir = Get-ChildItem -Path firestorm -Filter "build-vc*-64" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+      
+      if ($buildDir) {
+        Write-Host "Found build directory: $($buildDir.FullName)"
+        $releasePath = Join-Path $buildDir.FullName "newview\Release"
+        
+        if (Test-Path $releasePath) {
+          Write-Host "Creating package from: $releasePath"
+          
+          # Create README
+          @"
+Sela Viewer 1.0.0
+=================
+
+أول فيور احترافي يدعم اللغة العربية بشكل كامل
+
+المطور: شركة أيادينا المدعة
+البريد: team@ourchands.com
+الموقع: www.ourchands.com
+
+التثبيت:
+---------
+1. فك ضغط الملف
+2. شغّل firestorm-bin.exe
+3. استمتع!
+
+المتطلبات:
+----------
+- Windows 10/11 (64-bit)
+- 4 GB RAM (8 GB موصى به)
+- بطاقة رسومات تدعم OpenGL 3.0
+
+الترخيص: LGPL-2.1
+الكود المصدري: https://github.com/ourchands/sela-viewer
+
+---
+This viewer is not provided or supported by Linden Lab.
+Based on Firestorm Viewer © 2010-2026
+"@ | Out-File -FilePath "$releasePath\README.txt" -Encoding UTF8
+          
+          Compress-Archive -Path "$releasePath\*" -DestinationPath artifacts\Sela-Viewer-Windows-x64.zip -Force
+          
+          $zipSize = (Get-Item artifacts\Sela-Viewer-Windows-x64.zip).Length / 1MB
+          Write-Host "Package created successfully!"
+          Write-Host "Package size: $([math]::Round($zipSize, 2)) MB"
+        } else {
+          Write-Host "ERROR: Release directory not found"
+          exit 1
+        }
+      } else {
+        Write-Host "ERROR: Build directory not found"
+        exit 1
+      }
+
+artifacts:
+  - path: artifacts\Sela-Viewer-Windows-x64.zip
+    name: SelaViewer
+
+deploy: off
