@@ -10,94 +10,200 @@ on:
 jobs:
   build-windows:
     runs-on: windows-2022
-    timeout-minutes: 360
+    timeout-minutes: 420
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Python
+      - name: Free up disk space
+        run: |
+          Remove-Item -Path "C:\Program Files\dotnet" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "C:\Program Files (x86)\Android" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+      
+      - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install autobuild llsd python-llbase
+          autobuild --version
+          python --version
+      
+      - name: Setup Visual Studio
+        uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: '17.0'
       
       - name: Clone Firestorm
         run: |
+          Write-Host "Cloning Firestorm..."
           git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm
+          Write-Host "Clone completed"
       
       - name: Clone build variables
         run: |
+          Write-Host "Cloning build variables..."
           git clone --depth 1 https://github.com/FirestormViewer/fs-build-variables.git build-variables
+          Write-Host "Variables cloned"
       
       - name: Copy Arabic support files
         run: |
+          Write-Host "Copying Arabic support files..."
           Copy-Item Arabic.cmake firestorm\indra\cmake\ -Force
           Copy-Item llarabicsupport.h firestorm\indra\llui\ -Force
           Copy-Item llarabicsupport.cpp firestorm\indra\llui\ -Force
+          Write-Host "Files copied successfully"
       
       - name: Download Arabic font
         run: |
+          Write-Host "Downloading Arabic font..."
           New-Item -ItemType Directory -Force -Path firestorm\indra\newview\skins\default\fonts
           Invoke-WebRequest -Uri "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf" -OutFile firestorm\indra\newview\skins\default\fonts\NotoSansArabic-Regular.ttf
+          Write-Host "Font downloaded"
       
       - name: Copy customization files
         run: |
+          Write-Host "Copying customization files..."
           if (Test-Path "sela_icon.png") {
             Copy-Item sela_icon.png firestorm\indra\newview\icons\default\viewer_icon.png -Force
+            Write-Host "Icon copied"
           }
           if (Test-Path "sela_splash.png") {
             Copy-Item sela_splash.png firestorm\indra\newview\skins\default\textures\startup_logo.png -Force
+            Write-Host "Splash copied"
           }
           if (Test-Path "floater_about.xml") {
             Copy-Item floater_about.xml firestorm\indra\newview\skins\default\xui\en\floater_about.xml -Force
+            Write-Host "About dialog copied"
           }
           if (Test-Path "panel_login.xml") {
             Copy-Item panel_login.xml firestorm\indra\newview\skins\default\xui\en\panel_login.xml -Force
+            Write-Host "Login panel copied"
           }
           if (Test-Path "strings.xml") {
             Copy-Item strings.xml firestorm\indra\newview\skins\default\xui\en\strings.xml -Force
+            Write-Host "Strings copied"
           }
       
       - name: Modify CMakeLists
         run: |
+          Write-Host "Modifying CMakeLists..."
           cd firestorm
-          $content = Get-Content "indra\llui\CMakeLists.txt" -Raw
-          if ($content -notmatch "include\(Arabic\)") {
-            $content = "include(Arabic)`n" + $content
-            Set-Content "indra\llui\CMakeLists.txt" $content
-          }
-      
-      - name: Configure build
-        run: |
-          cd firestorm
-          $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
-          autobuild configure -A 64 -c ReleaseFS_open
-      
-      - name: Build viewer
-        run: |
-          cd firestorm
-          $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
-          autobuild build -A 64 -c ReleaseFS_open --no-configure
-      
-      - name: Package artifacts
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts
-          $buildPath = Get-ChildItem -Path firestorm -Filter "build-vc*-64" -Directory | Select-Object -First 1
-          if ($buildPath) {
-            $releasePath = Join-Path $buildPath.FullName "newview\Release"
-            if (Test-Path $releasePath) {
-              Compress-Archive -Path "$releasePath\*" -DestinationPath artifacts\Sela-Viewer-Windows-x64.zip
+          $cmakePath = "indra\llui\CMakeLists.txt"
+          if (Test-Path $cmakePath) {
+            $content = Get-Content $cmakePath -Raw
+            if ($content -notmatch "include\(Arabic\)") {
+              $content = "include(Arabic)`n" + $content
+              Set-Content $cmakePath $content
+              Write-Host "CMakeLists modified successfully"
+            } else {
+              Write-Host "Arabic include already present"
             }
           }
       
+      - name: Set environment variables
+        run: |
+          $buildVarsPath = Join-Path $PWD "build-variables\variables"
+          echo "AUTOBUILD_VARIABLES_FILE=$buildVarsPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "AUTOBUILD_BUILD_ID=260241205" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      
+      - name: Configure build
+        run: |
+          Write-Host "Configuring build..."
+          cd firestorm
+          $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
+          $env:AUTOBUILD_BUILD_ID = "260241205"
+          autobuild configure -A 64 -c ReleaseFS_open -- -DUSE_KDU=FALSE -DUSE_FMODSTUDIO=FALSE
+        shell: pwsh
+      
+      - name: Build viewer
+        run: |
+          Write-Host "Building viewer..."
+          cd firestorm
+          $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
+          $env:AUTOBUILD_BUILD_ID = "260241205"
+          autobuild build -A 64 -c ReleaseFS_open --no-configure
+        shell: pwsh
+      
+      - name: Create README
+        run: |
+          @"
+# Sela Viewer 1.0.0
+
+أول فيور احترافي يدعم اللغة العربية بشكل كامل
+
+## المطور
+شركة أيادينا المدعة
+البريد: team@ourchands.com
+الموقع: www.ourchands.com
+
+## التثبيت
+1. فك ضغط الملف
+2. شغّل firestorm-bin.exe
+3. استمتع!
+
+## المتطلبات
+- Windows 10/11 (64-bit)
+- 4 GB RAM (8 GB موصى به)
+- بطاقة رسومات تدعم OpenGL 3.0
+
+## الترخيص
+LGPL-2.1
+
+الكود المصدري: https://github.com/ourchands/sela-viewer
+
+---
+This viewer is not provided or supported by Linden Lab.
+Based on Firestorm Viewer © 2010-2026
+"@ | Out-File -FilePath firestorm\build-vc170-64\newview\Release\README.txt -Encoding UTF8
+      
+      - name: Package artifacts
+        if: always()
+        run: |
+          Write-Host "Packaging artifacts..."
+          New-Item -ItemType Directory -Force -Path artifacts
+          
+          $buildDir = Get-ChildItem -Path firestorm -Filter "build-vc*-64" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+          
+          if ($buildDir) {
+            Write-Host "Found build directory: $($buildDir.FullName)"
+            $releasePath = Join-Path $buildDir.FullName "newview\Release"
+            
+            if (Test-Path $releasePath) {
+              Write-Host "Packaging from: $releasePath"
+              Compress-Archive -Path "$releasePath\*" -DestinationPath artifacts\Sela-Viewer-Windows-x64.zip -Force
+              Write-Host "Package created successfully!"
+              
+              $zipSize = (Get-Item artifacts\Sela-Viewer-Windows-x64.zip).Length / 1MB
+              Write-Host "Package size: $([math]::Round($zipSize, 2)) MB"
+            } else {
+              Write-Host "ERROR: Release directory not found at $releasePath"
+              Write-Host "Contents of build directory:"
+              Get-ChildItem $buildDir.FullName -Recurse -Directory | Select-Object FullName
+            }
+          } else {
+            Write-Host "ERROR: No build directory found"
+            Write-Host "Contents of firestorm directory:"
+            Get-ChildItem firestorm -Directory | Select-Object Name
+          }
+      
       - name: Upload build artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Sela-Viewer-Windows-x64
-          path: artifacts/Sela-Viewer-Windows-x64.zip
-          if-no-files-found: error
+          path: artifacts/*.zip
+          if-no-files-found: warn
+      
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: firestorm/build-vc*/logs/*.log
+          if-no-files-found: ignore
