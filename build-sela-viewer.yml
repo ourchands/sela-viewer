@@ -118,7 +118,8 @@ jobs:
           cd firestorm
           $env:AUTOBUILD_VARIABLES_FILE = "$PWD\..\build-variables\variables"
           $env:AUTOBUILD_BUILD_ID = "260241205"
-          autobuild configure -A 64 -c ReleaseFS_open -- -DUSE_KDU=FALSE -DUSE_FMODSTUDIO=FALSE
+          Write-Host "Running autobuild configure with verbose output..."
+          autobuild configure -A 64 -c ReleaseFS_open --verbose -- -DUSE_KDU=FALSE -DUSE_FMODSTUDIO=FALSE
         shell: pwsh
       
       - name: Build viewer
